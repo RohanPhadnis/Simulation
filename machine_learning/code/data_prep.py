@@ -9,7 +9,7 @@ calc = lambda t, e, d, p, c: ((e * d) / (1 + e * math.sin(t - p))) + c
 file = open('../data/data.txt', 'a')
 
 
-for _ in range(10000):
+for i in range(10000):
     l = []
     ecc_determination = random.randint(0, 99)
     circle_rad = 0
@@ -37,6 +37,7 @@ for _ in range(10000):
             l[1].append([theta - step/2, r])
         theta += step
     file.write(encoder.encode(l) + '\n')
+    print(i)
 
 
 file.close()
