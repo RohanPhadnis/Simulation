@@ -20,27 +20,38 @@ val_ys = []
 with open('../data/data.txt') as file:
     text = file.read().split('\n')
 
+text = text[:len(text)-1]
 random.shuffle(text)
 
-for line in text[:len(text) * RATIO]:
+for line in text[:int(len(text) * RATIO)]:
     data = decoder.decode(line)
-    xs.append(data[1])
-    ys.append(data[0])
+    l = []
+    for element in data[1]:
+        l.append(numpy.array(element))
+    xs.append(numpy.array(l))
+    print(xs[-1].shape)
+    ys.append(numpy.array(data[0]))
 
-for line in text[len(text) * RATIO:]:
+for line in text[int(len(text) * RATIO):]:
     data = decoder.decode(line)
-    val_xs.append(data[1])
-    val_ys.append(data[0])
+    l = []
+    for element in data[1]:
+        l.append(numpy.array(element))
+    val_xs.append(numpy.array(l))
+    val_ys.append(numpy.array(data[0]))
 
 xs = numpy.array(xs)
 ys = numpy.array(ys)
+print(xs.shape)
+# print(xs)
+print(ys.shape)
 val_xs = numpy.array(val_xs)
 val_ys = numpy.array(val_ys)
 
-tb = keras.callbacks.TensorBoard(logdir='{}/logs'.format(DIR))
+tb = keras.callbacks.TensorBoard(log_dir='{}/logs'.format(DIR))
 
 model = keras.models.Sequential([
-    keras.layers.Bidirectional(keras.layers.LSTM(32, return_sequences=True)),
+    keras.layers.Bidirectional(keras.layers.LSTM(32, return_sequences=True), input_shape=(100, 2)),
     keras.layers.Bidirectional(keras.layers.LSTM(16)),
     keras.layers.Dense(32, activation='relu'),
     keras.layers.Dense(16, activation='relu'),

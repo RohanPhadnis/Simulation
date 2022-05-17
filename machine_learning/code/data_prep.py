@@ -28,7 +28,8 @@ for i in range(10000):
     start = random.random() * 2 * math.pi
     step = (2 * math.pi - start) / 100
     theta = start
-    while theta < 2 * math.pi:
+    j = 0
+    while theta < 2 * math.pi and j < 100:
         try:
             r = calc(theta, eccentricity, directrix, phase_shift, circle_rad)
             l[1].append([theta, r])
@@ -36,6 +37,7 @@ for i in range(10000):
             r = calc(theta - step/2, eccentricity, directrix, phase_shift, circle_rad)
             l[1].append([theta - step/2, r])
         theta += step
+        j += 1
     file.write(encoder.encode(l) + '\n')
     print(i)
 
