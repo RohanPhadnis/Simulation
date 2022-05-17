@@ -57,5 +57,5 @@ model = keras.models.Sequential([
 
 model.summary()
 model.compile(optimizer='adam', loss='mse', metrics='acc')
-model.fit(x=xs, y=ys, epochs=100, verbose=1, callbacks=[tb], validation_data=(val_xs, val_ys))
+model.fit(x=xs, y=ys, epochs=5, verbose=1, callbacks=[tb], validation_data=(val_xs, val_ys))
 model.save('{}/model.h5'.format(DIR))
