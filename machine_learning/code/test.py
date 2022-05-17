@@ -1,6 +1,11 @@
+import os
 import math
 import random
+import numpy
+from tensorflow import keras
 
+DIR = sorted(os.listdir('../models'))[-1]
+model = keras.models.load_model('../models/{}/model.h5'.format(DIR))
 calc = lambda t, e, d, p, c: ((e * d) / (1 + e * math.sin(t - p))) + c
 ecc_determination = random.randint(0, 99)
 circle_rad = 0
@@ -16,6 +21,7 @@ elif 4 <= ecc_determination < 52:
 else:
     eccentricity = (1 + random.random()) * random.randint(1, 10)
 l = [[eccentricity, directrix, phase_shift, circle_rad], []]
+print(l[0])
 start = random.random() * 2 * math.pi
 step = (2 * math.pi - start) / 100
 theta = start
@@ -29,3 +35,7 @@ while theta < 2 * math.pi and j < 100:
         l[1].append([theta - step/2, r])
     theta += step
     j += 1
+
+array = numpy.array([l[1]])
+pred = model.predict(array)
+print(pred)

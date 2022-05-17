@@ -48,8 +48,7 @@ val_ys = numpy.array(val_ys)
 tb = keras.callbacks.TensorBoard(log_dir='{}/logs'.format(DIR))
 
 model = keras.models.Sequential([
-    keras.layers.Bidirectional(keras.layers.LSTM(32, return_sequences=True), input_shape=(100, 2)),
-    keras.layers.Bidirectional(keras.layers.LSTM(16)),
+    keras.layers.Dense(64, activation='relu', input_shape=(100, 2)),
     keras.layers.Dense(32, activation='relu'),
     keras.layers.Dense(16, activation='relu'),
     keras.layers.Dense(4)
