@@ -29,7 +29,6 @@ for line in text[:int(len(text) * RATIO)]:
     for element in data[1]:
         l.append(numpy.array(element))
     xs.append(numpy.array(l))
-    print(xs[-1].shape)
     ys.append(numpy.array(data[0]))
 
 for line in text[int(len(text) * RATIO):]:
@@ -45,16 +44,22 @@ ys = numpy.array(ys)
 val_xs = numpy.array(val_xs)
 val_ys = numpy.array(val_ys)
 
+print('train x shape:', xs.shape)
+print('val x shape:', val_xs.shape)
+print('train y shape:', ys.shape)
+print('val y shape:', val_ys.shape)
+
 tb = keras.callbacks.TensorBoard(log_dir='{}/logs'.format(DIR))
 
 model = keras.models.Sequential([
-    keras.layers.Dense(64, activation='relu', input_shape=(100, 2)),
+    keras.layers.Flatten(input_shape=(100, 2)),
+    keras.layers.Dense(64, activation='relu'),
     keras.layers.Dense(32, activation='relu'),
     keras.layers.Dense(16, activation='relu'),
     keras.layers.Dense(4)
 ])
 
 model.summary()
-model.compile(optimizer='adam', loss='mse', metrics='acc')
-model.fit(x=xs, y=ys, epochs=5, verbose=1, callbacks=[tb], validation_data=(val_xs, val_ys))
+model.compile(optimizer='adam', loss='huber', metrics='acc')
+model.fit(x=xs, y=ys, epochs=100, verbose=1, callbacks=[tb], validation_data=(val_xs, val_ys))
 model.save('{}/model.h5'.format(DIR))
