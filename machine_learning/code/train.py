@@ -42,9 +42,6 @@ for line in text[int(len(text) * RATIO):]:
 
 xs = numpy.array(xs)
 ys = numpy.array(ys)
-print(xs.shape)
-# print(xs)
-print(ys.shape)
 val_xs = numpy.array(val_xs)
 val_ys = numpy.array(val_ys)
 
