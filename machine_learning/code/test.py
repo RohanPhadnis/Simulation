@@ -5,6 +5,7 @@ import numpy
 from tensorflow import keras
 
 DIR = sorted(os.listdir('../models'))[-1]
+print(DIR)
 model = keras.models.load_model('../models/{}/model.h5'.format(DIR))
 calc = lambda t, e, d, p, c: ((e * d) / (1 + e * math.sin(t - p))) + c
 ecc_determination = random.randint(0, 99)

@@ -1,7 +1,10 @@
 import time
 import math
+import numpy
 import pygame
 from pygame.locals import *
+from scipy.optimize import curve_fit
+
 
 pygame.init()
 SCREEN_DIMS = [1400, 800]
@@ -11,6 +14,7 @@ pygame.display.set_caption('Simulation')
 trail_surf = pygame.Surface(SIM_DIMS)
 trail_surf.fill((20, 20, 20))
 
+
 scale = 2 * 10 ** 8
 # sim to screen
 calc = lambda point: [((point[0] / scale * SIM_DIMS[0]) + SIM_DIMS[0]) / 2,
@@ -18,6 +22,7 @@ calc = lambda point: [((point[0] / scale * SIM_DIMS[0]) + SIM_DIMS[0]) / 2,
 # screen to sim
 inv_calc = lambda point: [(point[0] * 2 - SIM_DIMS[0]) / SIM_DIMS[0] * scale,
                           ((SIM_DIMS[1] - point[1]) * 2 - SIM_DIMS[1]) / SIM_DIMS[1] * scale]
+function = lambda t, e, d, p: ((e * d) / (1 + e * numpy.sin(t - p)))
 
 
 def stringify(num):
@@ -55,8 +60,8 @@ def draw_grid():
 
 def draw_trail():
     trail_surf.fill((20, 20, 20))
-    for point in trail:
-        pygame.draw.circle(trail_surf, sat.color, calc(point), 1)
+    for i in range(len(xs)):
+        pygame.draw.circle(trail_surf, sat.color, calc([xs[i], ys[i]]), 1)
 
 
 class Button:
@@ -131,27 +136,28 @@ class Particle:
         self.last_time = current_time
 
 
-zoom_in = Button('+', [SCREEN_DIMS[0] - 150, SCREEN_DIMS[1] - 140], (20, 20, 20))
-zoom_out = Button('-', [SCREEN_DIMS[0] - 190, SCREEN_DIMS[1] - 140], (20, 20, 20))
-run_button = Button('run', [SCREEN_DIMS[0] - 280, SCREEN_DIMS[1] - 80], (0, 150, 150))
-reset_button = Button('reset', [SCREEN_DIMS[0] - 200, SCREEN_DIMS[1] - 80], (0, 150, 150))
-# run_button = Button('run', [SCREEN_DIMS[0] - 200, SCREEN_DIMS[1] - 80], (0, 150, 150))
-sat_mass = Slider('satellite mass', [SCREEN_DIMS[0] - 550, SCREEN_DIMS[1] - 180], [1, 10 ** 4])
-star_mass_coeff = Slider('star mass coeff', [SCREEN_DIMS[0] - 550, SCREEN_DIMS[1] - 100], [0, 1])
-star_mass_exp = Slider('star mass exp', [SCREEN_DIMS[0] - 550, SCREEN_DIMS[1] - 30], [20, 32], step=1)
-precision = Slider('precision', [SCREEN_DIMS[0] - 250, SCREEN_DIMS[1] - 190], [1, 10000])
-x_vel_coeff = Slider('X velocity coeff', [SCREEN_DIMS[0] - 550, SCREEN_DIMS[1] - 330], [-1, 1])
-x_vel_exp = Slider('X velocity exp', [SCREEN_DIMS[0] - 550, SCREEN_DIMS[1] - 260], [0, 6], step=1)
-y_vel_coeff = Slider('Y velocity coeff', [SCREEN_DIMS[0] - 250, SCREEN_DIMS[1] - 330], [-1, 1])
-y_vel_exp = Slider('Y velocity exp', [SCREEN_DIMS[0] - 250, SCREEN_DIMS[1] - 260], [0, 6], step=1)
+zoom_in = Button('+', [SCREEN_DIMS[0] - 110, SCREEN_DIMS[1] - 140], (20, 20, 20))
+zoom_out = Button('-', [SCREEN_DIMS[0] - 150, SCREEN_DIMS[1] - 140], (20, 20, 20))
+run_button = Button('run', [SCREEN_DIMS[0] - 280, SCREEN_DIMS[1] - 140], (0, 150, 150))
+reset_button = Button('reset', [SCREEN_DIMS[0] - 300, SCREEN_DIMS[1] - 80], (0, 150, 150))
+regress_button = Button('regress', [SCREEN_DIMS[0] - 180, SCREEN_DIMS[1] - 80], (0, 150, 150))
+sat_mass = Slider('satellite mass', [SCREEN_DIMS[0] - 570, SCREEN_DIMS[1] - 180], [1, 10 ** 4])
+star_mass_coeff = Slider('star mass coeff', [SCREEN_DIMS[0] - 570, SCREEN_DIMS[1] - 100], [0, 1])
+star_mass_exp = Slider('star mass exp', [SCREEN_DIMS[0] - 570, SCREEN_DIMS[1] - 30], [20, 32], step=1)
+precision = Slider('precision', [SCREEN_DIMS[0] - 275, SCREEN_DIMS[1] - 190], [1, 100])
+x_vel_coeff = Slider('X velocity coeff', [SCREEN_DIMS[0] - 570, SCREEN_DIMS[1] - 330], [-1, 1])
+x_vel_exp = Slider('X velocity exp', [SCREEN_DIMS[0] - 570, SCREEN_DIMS[1] - 260], [0, 6], step=1)
+y_vel_coeff = Slider('Y velocity coeff', [SCREEN_DIMS[0] - 275, SCREEN_DIMS[1] - 330], [-1, 1])
+y_vel_exp = Slider('Y velocity exp', [SCREEN_DIMS[0] - 275, SCREEN_DIMS[1] - 260], [0, 6], step=1)
 sliders = [sat_mass, star_mass_coeff, star_mass_exp, x_vel_coeff, x_vel_exp, y_vel_coeff, y_vel_exp, precision]
 G = 6.67 * 10 ** -11
 hyp_calc = lambda pos1, pos2: math.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2)
 star = Particle([0, 0], star_mass_coeff.get_val(), (255, 255, 0), 10)
-sat = Particle([0, scale / 2], sat_mass.get_val(), (0, 255, 255), 5)
+sat = Particle([0, scale / 2], sat_mass.get_val(), (200, 80, 0), 5)
 run = False
 timer = 0
-trail = []
+xs = []
+ys = []
 
 
 def force_calc():
@@ -196,10 +202,57 @@ def ideal_vel_calc():
     return [mag * math.cos(angle), mag * math.sin(angle)]
 
 
+def polar_to_rect(rad, theta):
+    return [rad * math.cos(theta), rad * math.sin(theta)]
+
+
+def rect_to_polar(x, y):
+    if x == 0:
+        if y < 0:
+            val = math.atan(-math.inf)
+        else:
+            val = math.atan(math.inf)
+    else:
+        val = math.atan(y / x)
+        if x < 0 and y or x < 0 and y < 0:
+            val += math.pi
+    return [math.sqrt(x ** 2 + y ** 2), val]
+
+
+def regression():
+    rs = []
+    ts = []
+    for i in range(len(xs)):
+        rad, theta = rect_to_polar(xs[i], ys[i])
+        rs.append(rad)
+        ts.append(theta)
+    c = curve_fit(function, numpy.array(rs), numpy.array(ts), p0=[1, rs[0], math.pi / 2], maxfev=100000)
+    print(c[0])
+    return c[0]
+
+
+def graph(coeffs):
+    global graph_points
+    if len(graph_points) == 0:
+        i = 0
+        while i < 2 * math.pi:
+            try:
+                j = coeffs[0] * coeffs[1] / (1 + coeffs[0] * math.sin(i - coeffs[2]))
+                graph_points.append(polar_to_rect(j, i))
+            except ZeroDivisionError:
+                pass
+            i += 2 * math.pi / 100
+    for index, point in enumerate(graph_points[:len(graph_points) - 1]):
+        pygame.draw.line(screen, (150, 150, 0), calc(point), calc(graph_points[index + 1]), 2)
+
 
 count = 0
 start = time.time()
 q = False
+show_data = False
+coeffs = [0, 0, 0]
+graph_points = []
+
 
 while not q:
     count += 1
@@ -215,23 +268,31 @@ while not q:
     show_text('sat mass: {} kg'.format(stringify(sat.mass)), SCREEN_DIMS[0] - 550, 200)
     show_text('star mass: {} kg'.format(stringify(star.mass)), SCREEN_DIMS[0] - 550, 250)
     show_text('escape speed: {} m/s'.format(stringify(math.sqrt(2 * G * star.mass / hyp_calc(sat.pos, star.pos)))), SCREEN_DIMS[0] - 550, 300)
+    show_text('time: {} sec'.format(stringify(timer)), SCREEN_DIMS[0] - 250, 200)
     iv = ideal_vel_calc()
     show_text('ideal velocity: <{} m/s, {} m/s>'.format(stringify(iv[0]), stringify(iv[1])), SCREEN_DIMS[0] - 550, 350)
-    show_text('zoom', SCREEN_DIMS[0] - 190, SCREEN_DIMS[1] - 160)
+    show_text('zoom', SCREEN_DIMS[0] - 150, SCREEN_DIMS[1] - 160)
     zoom_in.draw()
     zoom_out.draw()
     run_button.draw()
     reset_button.draw()
+    # regress_button.draw()
     sat.draw()
     star.draw()
     for slider in sliders:
         slider.draw()
 
+    if show_data:
+        graph(coeffs)
+        show_text('r(θ) = ', SCREEN_DIMS[0] - 150, SCREEN_DIMS[1] / 4)
+        show_text('{} * {}'.format(stringify(coeffs[0]), stringify(coeffs[1])), SCREEN_DIMS[0] - 130, SCREEN_DIMS[1] / 4 + 10)
+
     if run:
+        xs.append(sat.pos[0])
+        ys.append(sat.pos[1])
         sat.move(force_calc(), timer)
         timer += precision.get_val()
-        trail.append(sat.pos.copy())
-        pygame.draw.circle(trail_surf, sat.color, calc(trail[-1]), 1)
+        pygame.draw.circle(trail_surf, sat.color, calc([xs[-1], ys[-1]]), 1)
     else:
         sat.mass = sat_mass.get_val()
         star.mass = star_mass_coeff.get_val() * 10 ** star_mass_exp.get_val()
@@ -243,19 +304,26 @@ while not q:
             q = True
         elif event.type == MOUSEBUTTONUP and event.button == 1:
             if zoom_in.rect.collidepoint(event.pos):
-                scale /= 1.75
+                scale /= 1.2
                 draw_trail()
             elif zoom_out.rect.collidepoint(event.pos):
-                scale *= 1.75
+                scale *= 1.2
                 draw_trail()
             elif run_button.rect.collidepoint(event.pos):
                 run = True
                 timer = 0
                 sat.last_time = 0
                 trail_surf.fill((20, 20, 20))
-                trail = []
+                xs = []
+                ys = []
+                show_data = False
             elif reset_button.rect.collidepoint(event.pos):
                 run = False
+                sat.pos = [xs[0], ys[0]]
+            # elif regress_button.rect.collidepoint(event.pos):
+            #     show_data = True
+            #     coeffs = regression()
+            #     graph_points = []
             for slider in sliders:
                 slider.clicked = False
             sat.clicked = False
